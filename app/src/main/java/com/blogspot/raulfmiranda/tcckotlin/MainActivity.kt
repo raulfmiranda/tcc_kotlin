@@ -12,6 +12,8 @@ import android.os.Bundle
 import android.provider.MediaStore
 import android.widget.ImageView
 import android.widget.Toast
+import com.google.firebase.storage.StorageReference
+import com.google.firebase.storage.FirebaseStorage
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.File
 
@@ -39,6 +41,25 @@ class MainActivity : AppCompatActivity() {
                 startActivityForResult(cameraIntent, CAMERA_REQUEST)
             }
         }
+
+        btnUploadPicture.setOnClickListener {
+            uploadFoto()
+        }
+    }
+
+    private fun uploadFoto() {
+        arquivoFoto?.let {
+            val storageReference = FirebaseStorage.getInstance().getReference().child(it.name)
+            val uploadTask = storageReference.putFile(Uri.fromFile(it))
+
+            uploadTask.addOnFailureListener {
+
+            }.addOnSuccessListener {
+
+            }
+
+        }
+
     }
 
     private fun geraCaminhoFoto(): String? {
@@ -64,11 +85,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         if(requestCode == CAMERA_REQUEST && resultCode == RESULT_OK) {
-            setBitmapConsulta()
+            setBitmap()
         }
     }
 
-    private fun setBitmapConsulta() {
+    private fun setBitmap() {
         val bitmapConsulta = BitmapFactory.decodeFile(arquivoFoto?.absolutePath)
         bitmapConsulta?.let {
             val bitmapConsultaReduzido = resizeBitmap(it, maxWidthHeight, maxWidthHeight)
