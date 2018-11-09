@@ -3,19 +3,23 @@ package com.blogspot.raulfmiranda.tcckotlin
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
+import android.graphics.*
 import android.net.Uri
 import android.os.Build
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.MediaStore
+import android.util.Log
 import android.widget.ImageView
 import android.widget.Toast
 import com.google.firebase.storage.StorageReference
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.File
+import android.opengl.ETC1.getHeight
+import android.opengl.ETC1.getWidth
+
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -45,6 +49,10 @@ class MainActivity : AppCompatActivity() {
         btnUploadPicture.setOnClickListener {
             uploadFoto()
         }
+
+        btnApplyFilter.setOnClickListener {
+            applyFilter()
+        }
     }
 
     private fun uploadFoto() {
@@ -53,17 +61,16 @@ class MainActivity : AppCompatActivity() {
             val uploadTask = storageReference.putFile(Uri.fromFile(it))
 
             uploadTask.addOnFailureListener {
-
+                Toast.makeText(this@MainActivity, it.message, Toast.LENGTH_SHORT).show()
+                Log.e("firebaseerror", it.message)
             }.addOnSuccessListener {
-
+                Toast.makeText(this@MainActivity, "Foto enviada com sucesso.", Toast.LENGTH_SHORT).show()
             }
-
         }
-
     }
 
     private fun geraCaminhoFoto(): String? {
-        val caminho = getExternalFilesDir(null)?.path + "/" + System.currentTimeMillis() + ".png"
+        val caminho = getExternalFilesDir(null)?.path + "/" + System.currentTimeMillis() + ".jpg"
         return caminho
     }
 
@@ -90,13 +97,46 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setBitmap() {
-        val bitmapConsulta = BitmapFactory.decodeFile(arquivoFoto?.absolutePath)
-        bitmapConsulta?.let {
+        val bitmap = BitmapFactory.decodeFile(arquivoFoto?.absolutePath)
+        bitmap?.let {
             val bitmapConsultaReduzido = resizeBitmap(it, maxWidthHeight, maxWidthHeight)
             imgFoto.setImageBitmap(bitmapConsultaReduzido)
             imgFoto.scaleType = ImageView.ScaleType.FIT_CENTER
             imgFoto.setTag(arquivoFoto?.absolutePath)
         }
+    }
+
+    //TODO: http://java-lang-programming.com/en/articles/80
+    // https://www.tutorialspoint.com/android/android_image_effects.htm
+    fun applyFilter() {
+        val bmp = BitmapFactory.decodeFile(arquivoFoto?.absolutePath)
+        val operation = Bitmap.createBitmap(bmp.getWidth(), bmp.getHeight(), bmp.getConfig())
+        val red = 0.33
+        val green = 0.59
+        val blue = 0.11
+
+        for (i in 0 until bmp.getWidth()) {
+            for (j in 0 until bmp.getHeight()) {
+                val p = bmp.getPixel(i, j)
+                var r = Color.red(p)
+                var g = Color.green(p)
+                var b = Color.blue(p)
+
+                r = red.toInt() * r
+                g = green.toInt() * g
+                b = blue.toInt() * b
+                operation.setPixel(i, j, Color.argb(Color.alpha(p), r, g, b))
+            }
+        }
+        imgFoto.setImageBitmap(operation)
+    }
+
+    // Só aplicou filtro na imageView, mas não no File
+    private fun _applyFilter() {
+        val matrix = ColorMatrix()
+        matrix.setSaturation(0f)
+        val filter = ColorMatrixColorFilter(matrix)
+        imgFoto.setColorFilter(filter)
     }
 
     private fun resizeBitmap(image: Bitmap, maxWidth: Int, maxHeight: Int): Bitmap {
