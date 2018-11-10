@@ -12,14 +12,15 @@ import android.provider.MediaStore
 import android.util.Log
 import android.widget.ImageView
 import android.widget.Toast
-import com.google.firebase.storage.StorageReference
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.File
-import android.opengl.ETC1.getHeight
-import android.opengl.ETC1.getWidth
-
-
+import android.graphics.Bitmap
+import android.graphics.Bitmap.CompressFormat
+import java.io.ByteArrayOutputStream
+import java.io.FileOutputStream
+import android.graphics.ColorMatrixColorFilter
+import android.graphics.ColorMatrix
 
 class MainActivity : AppCompatActivity() {
 
@@ -106,37 +107,44 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    //TODO: http://java-lang-programming.com/en/articles/80
-    // https://www.tutorialspoint.com/android/android_image_effects.htm
-    fun applyFilter() {
-        val bmp = BitmapFactory.decodeFile(arquivoFoto?.absolutePath)
-        val operation = Bitmap.createBitmap(bmp.getWidth(), bmp.getHeight(), bmp.getConfig())
-        val red = 0.33
-        val green = 0.59
-        val blue = 0.11
-
-        for (i in 0 until bmp.getWidth()) {
-            for (j in 0 until bmp.getHeight()) {
-                val p = bmp.getPixel(i, j)
-                var r = Color.red(p)
-                var g = Color.green(p)
-                var b = Color.blue(p)
-
-                r = red.toInt() * r
-                g = green.toInt() * g
-                b = blue.toInt() * b
-                operation.setPixel(i, j, Color.argb(Color.alpha(p), r, g, b))
-            }
+    private fun applyFilter() {
+        val bitmap = BitmapFactory.decodeFile(arquivoFoto?.absolutePath)
+        bitmap?.let {
+            val bmp = resizeBitmap(it, maxWidthHeight, maxWidthHeight)
+            val bitmapGray = doGrayScale(bmp)
+            imgFoto.setImageBitmap(bitmapGray)
+            imgFoto.scaleType = ImageView.ScaleType.FIT_CENTER
+            imgFoto.setTag(arquivoFoto?.absolutePath)
+            bitmapToFile(bitmapGray)
         }
-        imgFoto.setImageBitmap(operation)
     }
 
-    // Só aplicou filtro na imageView, mas não no File
-    private fun _applyFilter() {
-        val matrix = ColorMatrix()
-        matrix.setSaturation(0f)
-        val filter = ColorMatrixColorFilter(matrix)
-        imgFoto.setColorFilter(filter)
+    private fun doGrayScale(bmpOriginal: Bitmap): Bitmap {
+        val width: Int
+        val height: Int
+        height = bmpOriginal.height
+        width = bmpOriginal.width
+        val bmpGrayscale = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bmpGrayscale)
+        val paint = Paint()
+        val colorMatrix = ColorMatrix()
+        colorMatrix.setSaturation(0f)
+        val colorMatrixFilter = ColorMatrixColorFilter(colorMatrix)
+        paint.colorFilter = colorMatrixFilter
+        canvas.drawBitmap(bmpOriginal, 0f, 0f, paint)
+        return bmpGrayscale
+    }
+
+    private fun bitmapToFile(bmp: Bitmap) {
+        val bos = ByteArrayOutputStream()
+        bmp.compress(CompressFormat.PNG, 0 /*ignored for PNG*/, bos)
+        val bitmapdata = bos.toByteArray()
+
+        //write the bytes in file
+        val fos = FileOutputStream(arquivoFoto)
+        fos.write(bitmapdata)
+        fos.flush()
+        fos.close()
     }
 
     private fun resizeBitmap(image: Bitmap, maxWidth: Int, maxHeight: Int): Bitmap {
