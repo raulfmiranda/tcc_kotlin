@@ -21,6 +21,9 @@ import java.io.ByteArrayOutputStream
 import java.io.FileOutputStream
 import android.graphics.ColorMatrixColorFilter
 import android.graphics.ColorMatrix
+import android.os.AsyncTask
+import android.widget.Button
+import android.widget.ProgressBar
 
 class MainActivity : AppCompatActivity() {
 
@@ -48,24 +51,28 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnUploadPicture.setOnClickListener {
+
             uploadFoto()
         }
 
         btnApplyFilter.setOnClickListener {
-            applyFilter()
+            ApplyFilterAsync().execute()
         }
     }
 
     private fun uploadFoto() {
         arquivoFoto?.let {
+            progressBar.visibility = ProgressBar.VISIBLE
             val storageReference = FirebaseStorage.getInstance().getReference().child(it.name)
             val uploadTask = storageReference.putFile(Uri.fromFile(it))
 
             uploadTask.addOnFailureListener {
                 Toast.makeText(this@MainActivity, it.message, Toast.LENGTH_SHORT).show()
                 Log.e("firebaseerror", it.message)
+                progressBar.visibility = ProgressBar.GONE
             }.addOnSuccessListener {
-                Toast.makeText(this@MainActivity, "Foto enviada com sucesso.", Toast.LENGTH_SHORT).show()
+                btnUploadPicture.text = "Picture sent"
+                progressBar.visibility = ProgressBar.GONE
             }
         }
     }
@@ -93,6 +100,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         if(requestCode == CAMERA_REQUEST && resultCode == RESULT_OK) {
+            setVisibleAll()
             setBitmap()
         }
     }
@@ -107,14 +115,31 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun applyFilter() {
+    private fun applyFilter(): Bitmap {
         val bitmap = BitmapFactory.decodeFile(arquivoFoto?.absolutePath)
         bitmap?.let {
             val bmp = resizeBitmap(it, maxWidthHeight, maxWidthHeight)
             val bitmapGray = doGrayScale(bmp)
+            return bitmapGray
+        }
+    }
+
+    inner class ApplyFilterAsync : AsyncTask<Void, Void, Bitmap>() {
+        override fun onPreExecute() {
+            super.onPreExecute()
+            progressBar.visibility = ProgressBar.VISIBLE
+        }
+
+        override fun doInBackground(vararg params: Void?): Bitmap {
+            return applyFilter()
+        }
+
+        override fun onPostExecute(bitmapGray: Bitmap) {
+            super.onPostExecute(bitmapGray)
             imgFoto.setImageBitmap(bitmapGray)
             imgFoto.scaleType = ImageView.ScaleType.FIT_CENTER
             imgFoto.setTag(arquivoFoto?.absolutePath)
+            progressBar.visibility = ProgressBar.GONE
             bitmapToFile(bitmapGray)
         }
     }
@@ -167,5 +192,11 @@ class MainActivity : AppCompatActivity() {
         } else {
             return img
         }
+    }
+
+    private fun setVisibleAll() {
+        btnApplyFilter.visibility = Button.VISIBLE
+        btnUploadPicture.visibility = Button.VISIBLE
+        imgFoto.visibility = ImageView.VISIBLE
     }
 }
