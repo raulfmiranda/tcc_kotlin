@@ -29,7 +29,7 @@ class MainActivity : AppCompatActivity() {
 
     private val CAMERA_PERMISSION_CODE = 100
     private val CAMERA_REQUEST = 1888
-    private val maxWidthHeight = 500
+    private val maxWidthHeight = 590
     private var arquivoFoto: File? =  null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,7 +51,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnUploadPicture.setOnClickListener {
-
             uploadFoto()
         }
 
@@ -87,7 +86,6 @@ class MainActivity : AppCompatActivity() {
 
         if(requestCode == CAMERA_PERMISSION_CODE) {
             if(grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(this@MainActivity, "Permissão da Câmera Permitida", Toast.LENGTH_SHORT).show()
                 val cameraIntent = Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE)
                 arquivoFoto = File(geraCaminhoFoto())
                 cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(arquivoFoto))
@@ -173,7 +171,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun resizeBitmap(image: Bitmap, maxWidth: Int, maxHeight: Int): Bitmap {
-        var img = image
+
+        var img = image;
+
+        // Verticalizar a foto
+        val matrix = Matrix()
+        matrix.postRotate(90f)
+        img = Bitmap.createBitmap(img, 0, 0, img.width, img.height, matrix, true)
+
         if (maxHeight > 0 && maxWidth > 0) {
             val width = img.width
             val height = img.height
