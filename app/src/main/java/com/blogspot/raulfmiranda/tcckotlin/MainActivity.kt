@@ -106,8 +106,8 @@ class MainActivity : AppCompatActivity() {
     private fun setBitmap() {
         val bitmap = BitmapFactory.decodeFile(arquivoFoto?.absolutePath)
         bitmap?.let {
-            val bitmapConsultaReduzido = resizeBitmap(it, maxWidthHeight, maxWidthHeight)
-            imgFoto.setImageBitmap(bitmapConsultaReduzido)
+            val bitmapReduzido = resizeBitmap(it, maxWidthHeight, maxWidthHeight)
+            imgFoto.setImageBitmap(bitmapReduzido)
             imgFoto.scaleType = ImageView.ScaleType.FIT_CENTER
             imgFoto.setTag(arquivoFoto?.absolutePath)
         }
@@ -160,7 +160,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun bitmapToFile(bmp: Bitmap) {
         val bos = ByteArrayOutputStream()
-        bmp.compress(CompressFormat.PNG, 0 /*ignored for PNG*/, bos)
+        bmp.compress(CompressFormat.JPEG, 100 /*ignored for PNG*/, bos)
         val bitmapdata = bos.toByteArray()
 
         //write the bytes in file
